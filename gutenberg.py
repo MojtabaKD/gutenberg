@@ -54,7 +54,7 @@ from string import ascii_uppercase
 from email.utils import parsedate
 
 # Default database path.
-DB_PATH = "D:\\.gutenberg"
+DB_PATH = "~/.gutenberg"
 
 # Default number of worker processes for parallel downloads.
 DOWNLOAD_POOL_SIZE = 4
@@ -901,7 +901,7 @@ Search commands:
    search <query>    display metadata of ebooks matching a query
    text <query>      display the contents of downloaded ebooks matching a query
    file <query>      save downloaded ebooks matching the query to disk, as [AUTHOR]/[TITlE].txt 
-   file_exact        save downloaded ebooks to disk, as [AUTHOR]/[TITlE].txt 
+   file_exact        save downloaded ebooks to disk by key, as [key]/[AUTHOR]/[TITlE].txt 
    queries           display a list of submitted download queries
 
 Download commands:
