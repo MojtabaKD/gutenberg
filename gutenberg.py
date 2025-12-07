@@ -766,6 +766,23 @@ class Gutenberg(object):
       if keys:
          self.download_keys(keys)
 
+   def download_all(self):
+      cur = self.conn.cursor()
+      cur.execute("""
+      INSERT OR REPLACE INTO DownloadQueries(query, last_issued)
+         VALUES (?, datetime('now'))""", ('all',))
+      self.conn.commit()
+      keys = list(cur.execute("""
+      SELECT Metadata.key, Metadata.name,
+             Metadata.encoding, Metadata.last_modified,
+             Data.when_downloaded
+      FROM Search INNER JOIN Metadata ON Search.key = Metadata.key
+                  LEFT OUTER JOIN Data ON Metadata.key = Data.key
+      WHERE Metadata.last_modified > COALESCE(Data.last_modified, '')
+      """))
+      if keys:
+         self.download_keys(keys)
+
    def update(self):
       cur = self.conn.cursor()
       # Update the catalog if need be.
@@ -851,6 +868,9 @@ def cmd_file_exact(argv):
 def cmd_download(argv):
    Gutenberg().download(argv[0])
 
+def cmd_download_all(argv):
+   Gutenberg().download_all()
+
 def cmd_update(argv):
    Gutenberg().update()
 
@@ -867,6 +887,7 @@ COMMANDS = {
    "file": {"func": cmd_file, "argc": 1},
    "file_exact": {"func": cmd_file_exact, "argc": 1},
    "download": {"func": cmd_download, "argc": 1},
+   "download_all": {"func": cmd_download_all, "argc": 0},
    "queries": {"func": cmd_queries, "argc": 0},
    "update": {"func": cmd_update, "argc": 0},
    "forget": {"func": cmd_forget, "argc": 1},
@@ -879,11 +900,13 @@ Access ebooks from the Project Gutenberg.
 Search commands:
    search <query>    display metadata of ebooks matching a query
    text <query>      display the contents of downloaded ebooks matching a query
-   file <query>      save downloaded ebooks to disk, as [AUTHOR]/[TITlE].txt 
+   file <query>      save downloaded ebooks matching the query to disk, as [AUTHOR]/[TITlE].txt 
+   file_exact        save downloaded ebooks to disk, as [AUTHOR]/[TITlE].txt 
    queries           display a list of submitted download queries
 
 Download commands:
    download <query>  download all ebooks matching a query
+   download_all      download all ebooks
    forget <query>    don't download new ebooks matching a submitted query
    update            update the catalog, download new ebooks matching submitted
                        queries, update downloaded ebooks that have been emended"""
