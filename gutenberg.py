@@ -54,7 +54,7 @@ from string import ascii_uppercase
 from email.utils import parsedate
 
 # Default database path.
-DB_PATH = "~/.gutenberg"
+DB_PATH = "D:\\.gutenberg"
 
 # Default number of worker processes for parallel downloads.
 DOWNLOAD_POOL_SIZE = 4
@@ -731,6 +731,12 @@ class Gutenberg(object):
          FROM Data NATURAL JOIN Search WHERE Search match ?""", (query,)):
          yield author, title, blob
 
+   def file_exact(self, query):
+      query = normalize(str(query))
+      for (author, title, blob) in self.conn.execute("""SELECT author, title, contents
+         FROM Data NATURAL JOIN Search WHERE key = ?""", (query,)):
+         yield author, title, blob
+
    def queries(self):
       for (q,) in self.conn.execute("""SELECT query FROM DownloadQueries
          ORDER BY last_issued DESC"""):
@@ -829,6 +835,19 @@ def cmd_file(argv):
             f.write(zlib.decompress(blob).decode())
          print(f"WRITING: {target}")
 
+def cmd_file_exact(argv):
+   for author, title, blob in Gutenberg().file_exact(argv[0]):
+       normalized_author = slugify(author)[:32]
+       normalized_title = slugify(title)[:48]
+       target = f"{argv[0]}_{normalized_author}_{normalized_title}.txt"
+       
+       if os.path.exists(target):
+           print(f"SKIPPING: file already exists: {target}")
+       else:
+           with open(target, "w") as f:
+               f.write(zlib.decompress(blob).decode())
+           print(f"WRITING: {target}")
+
 def cmd_download(argv):
    Gutenberg().download(argv[0])
 
@@ -846,6 +865,7 @@ COMMANDS = {
    "search": {"func": cmd_search, "argc": 1},
    "text": {"func": cmd_text, "argc": 1},
    "file": {"func": cmd_file, "argc": 1},
+   "file_exact": {"func": cmd_file_exact, "argc": 1},
    "download": {"func": cmd_download, "argc": 1},
    "queries": {"func": cmd_queries, "argc": 0},
    "update": {"func": cmd_update, "argc": 0},
